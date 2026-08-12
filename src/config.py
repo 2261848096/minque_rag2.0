@@ -26,9 +26,15 @@ KNOWLEDGE_FILE = os.path.join(
 
 # ====================== Milvus ======================
 
-MILVUS_HOST = "10.200.10.152"
+MILVUS_HOST = os.getenv(
+    "MILVUS_HOST",
+    "10.200.10.152"
+)
 
-MILVUS_PORT = "19530"
+MILVUS_PORT = os.getenv(
+    "MILVUS_PORT",
+    "19530"
+)
 
 MILVUS_URI = (
     f"http://{MILVUS_HOST}:{MILVUS_PORT}"

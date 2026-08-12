@@ -70,10 +70,10 @@ def build_index():
                 "history":
                 history,
 
-                "history_points":
+                "doctor":
                     str(
-                        row["病史要点"]
-                    ),
+                        row["医生"]
+                    ).strip(),
 
                 "vector":
                 vector

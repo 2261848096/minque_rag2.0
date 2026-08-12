@@ -6,54 +6,59 @@ import uvicorn
 import logging
 import os
 
-# ====================== 项目路径配置 ======================
-ROOT = (Path(__file__).resolve().parent.parent)
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT))
 
 from src.service.diagnosis_service import DiagnosisService
 
-# ====================== 服务初始化 ======================
 service = DiagnosisService()
 
-# ====================== FastAPI 应用 ======================
 app = FastAPI(
-    title="诊断 RAG 服务",
-    description="接收病例文本，进行 RAG 分析后返回结果",
-    version="1.0.0"
+    title="医疗RAG诊断服务",
+    description="输入病史信息和医生，进行病例向量检索",
+    version="2.0.0"
 )
+
 
 @app.post("/diagnose")
 async def diagnose(request: Request):
     try:
         data = await request.json()
 
-        # 支持多种字段名，增强兼容性
-        query = data.get("content")
+        history = data.get("context")
+        doctor = data.get("医生")
 
-        if not query or not isinstance(query, str):
-            raise HTTPException(status_code=400, detail="缺少有效的 query 字段（字符串）")
+        if not history or not isinstance(history, str):
+            raise HTTPException(400, "缺少有效的病史信息字段")
 
-        # 调用你的 RAG 服务
-        results = service.diagnose(query)
+        if not doctor or not isinstance(doctor, str):
+            raise HTTPException(400, "缺少有效的医生字段")
 
-        # 构造返回格式
+        results = service.diagnose(
+            history=history,
+            doctor=doctor
+        )
+
         response = {
             "success": True,
-            "query": query[:200] + "..." if len(query) > 200 else query,  # 只返回部分原文
-            "results": []
+            "count": len(results),
+            "results": results
         }
-
-        for i, item in enumerate(results, start=1):
-            response["results"].append({
-                "rank": i,
-                "content": item  # 根据你的 item 实际结构调整
-            })
 
         return JSONResponse(response)
 
+    except HTTPException:
+        raise
+
     except Exception as e:
-        logging.error(f"诊断接口异常: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"服务器内部错误: {str(e)}")
+        logging.error(
+            f"RAG诊断接口异常: {str(e)}",
+            exc_info=True
+        )
+        raise HTTPException(
+            500,
+            f"服务器内部错误: {str(e)}"
+        )
 
 
 @app.post("/select_diagnosis")
@@ -112,6 +117,7 @@ if __name__ == "__main__":
     log_formatter = logging.Formatter(
         "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
     )
+    os.makedirs("logs", exist_ok=True)
     file_handler = logging.FileHandler("logs/diagnose.log", mode="a", encoding="utf-8")
     file_handler.setFormatter(log_formatter)
 
@@ -123,7 +129,7 @@ if __name__ == "__main__":
 
     # 检测运行环境
     is_docker = os.environ.get("RUNNING_IN_DOCKER") == "1"
-    is_debugger = 'pydevd' in sys.modules
+    is_debugger = "pydevd" in sys.modules
 
     server_config = {
         "host": "0.0.0.0",
@@ -133,8 +139,7 @@ if __name__ == "__main__":
 
     if is_debugger or is_docker:
         server_config.update(reload=False, workers=1)
-        uvicorn.run("run:app", **server_config)
     else:
         server_config["reload"] = True
-        # reload 时需要用字符串形式
-        uvicorn.run("run:app", **server_config)
+
+    uvicorn.run("run:app", **server_config)

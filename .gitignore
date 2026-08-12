@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+
+
+# Conda environment
+.env
+venv/
+.venv/
+
+
+# Model files
+models/
+*.bin
+*.pt
+*.pth
+*.safetensors
+
+
+# Huggingface cache
+.cache/
+huggingface/
+
+
+# Milvus
+*.db
+*.log
+
+
+# Dataset
+data/*.xlsx
+data/*.csv
+
+
+# IDE
+.vscode/
+.idea/
+
+
+# System
+.DS_Store
